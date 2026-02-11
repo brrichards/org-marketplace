@@ -1,0 +1,19 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "org-marketplace",
+  "description": "Internal plugin marketplace for [Your Org]",
+  "owner": {
+    "name": "Your Org",
+    "email": "team@yourorg.com"
+  },
+  "plugins": [
+    {
+      "name": "example-plugin",
+      "description": "Template plugin demonstrating all extension types",
+      "version": "1.0.0",
+      "author": { "name": "Your Org" },
+      "source": "./plugins/example-plugin",
+      "category": "development"
+    }
+  ]
+}
