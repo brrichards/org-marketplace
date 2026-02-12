@@ -1,76 +1,80 @@
 #!/usr/bin/env bash
+# setup.sh — Bootstrap Claude Code with ff-profiles.
+#
+# Installs Claude Code (if not present), clones the ff-profiles repo into the
+# current project directory, and applies the default (developer) profile.
+#
+# Usage:
+#   curl -fsSL https://raw.githubusercontent.com/brrichards/ff-profiles/main/setup.sh | bash
+#
+# Flags (for testing):
+#   --local         Skip git clone, use local ff-profiles/ directory
+#   --skip-install  Skip Claude Code installation check
+#   --target <dir>  Target project directory (default: current directory)
 set -euo pipefail
 
-MARKETPLACE_REPO="${MARKETPLACE_REPO:-https://github.com/brrichards/org-marketplace.git}"
-MARKETPLACE_REF="${MARKETPLACE_REF:-main}"
-MARKETPLACE_HOME="${MARKETPLACE_HOME:-$HOME/.org-marketplace}"
-PROFILE="default"
-TARGET_DIR="."
+REPO_URL="https://github.com/brrichards/ff-profiles.git"
+DEFAULT_PROFILE="developer"
+
+# ── Argument parsing ──
+
+LOCAL_MODE=false
+SKIP_INSTALL=false
+TARGET="$(pwd)"
 
 while [[ $# -gt 0 ]]; do
-  case "$1" in
-    --profile) PROFILE="$2"; shift 2 ;;
-    --target)  TARGET_DIR="$2"; shift 2 ;;
-    --home)    MARKETPLACE_HOME="$2"; shift 2 ;;
-    *)         echo "Unknown argument: $1"; exit 1 ;;
-  esac
+	case "$1" in
+		--local)
+			LOCAL_MODE=true
+			shift
+			;;
+		--skip-install)
+			SKIP_INSTALL=true
+			shift
+			;;
+		--target)
+			TARGET="$2"
+			shift 2
+			;;
+		*)
+			shift
+			;;
+	esac
 done
 
-TARGET_DIR="$(cd "$TARGET_DIR" 2>/dev/null && pwd)" || { echo "Error: target dir not found: $TARGET_DIR"; exit 1; }
+# ── Step 1: Install Claude Code if needed ──
 
-# Install Claude Code if missing
-if ! command -v claude &>/dev/null && [[ "${CLAUDE_SKIP_INSTALL:-0}" != "1" ]]; then
-  echo "Installing Claude Code…"
-  npm install -g @anthropic-ai/claude-code
+if [[ "$SKIP_INSTALL" == false ]]; then
+	if ! command -v claude &> /dev/null; then
+		echo "Installing Claude Code..."
+		npm install -g @anthropic-ai/claude-code
+	else
+		echo "Claude Code already installed."
+	fi
 fi
 
-# Clone or update the marketplace
-if [[ -d "$MARKETPLACE_HOME/.git" ]]; then
-  echo "Updating marketplace at ${MARKETPLACE_HOME}…"
-  git -C "$MARKETPLACE_HOME" fetch origin "$MARKETPLACE_REF" --quiet
-  git -C "$MARKETPLACE_HOME" checkout "$MARKETPLACE_REF" --quiet 2>/dev/null || git -C "$MARKETPLACE_HOME" checkout "origin/$MARKETPLACE_REF" --quiet
-  git -C "$MARKETPLACE_HOME" pull --ff-only --quiet 2>/dev/null || true
+# ── Step 2: Get ff-profiles into the project ──
+
+FF_PROFILES_DIR="$TARGET/ff-profiles"
+
+if [[ "$LOCAL_MODE" == false ]]; then
+	if [[ -d "$FF_PROFILES_DIR/.git" ]]; then
+		echo "Updating ff-profiles..."
+		git -C "$FF_PROFILES_DIR" pull --quiet
+	else
+		echo "Cloning ff-profiles..."
+		git clone --quiet "$REPO_URL" "$FF_PROFILES_DIR"
+	fi
 else
-  echo "Cloning marketplace to ${MARKETPLACE_HOME}…"
-  git clone --branch "$MARKETPLACE_REF" "$MARKETPLACE_REPO" "$MARKETPLACE_HOME" --quiet
+	# Local mode: ff-profiles/ should already exist at the target
+	if [[ ! -d "$FF_PROFILES_DIR" ]]; then
+		echo "Error: --local specified but $FF_PROFILES_DIR does not exist." >&2
+		exit 1
+	fi
 fi
 
-# Validate profile exists
-PROFILE_DIR="${MARKETPLACE_HOME}/profiles/${PROFILE}"
-if [[ ! -f "${PROFILE_DIR}/settings.json" ]]; then
-  echo "Error: profile '${PROFILE}' not found at ${PROFILE_DIR}"
-  echo ""
-  echo "Available profiles:"
-  for dir in "${MARKETPLACE_HOME}"/profiles/*/; do
-    [[ -f "${dir}settings.json" ]] && echo "  - $(basename "$dir")"
-  done
-  exit 1
-fi
+# ── Step 3: Apply default profile ──
 
-# Apply profile to target
-CLAUDE_DIR="${TARGET_DIR}/.claude"
-rm -rf "$CLAUDE_DIR"
-mkdir -p "$CLAUDE_DIR"
-cp -R "${PROFILE_DIR}/." "$CLAUDE_DIR/"
-
-echo "Profile '${PROFILE}' applied to ${TARGET_DIR}/.claude/"
-
-# Show enabled plugins
-ENABLED=$(python3 -c "
-import json, sys
-s = json.load(open('${CLAUDE_DIR}/settings.json'))
-plugins = [k for k, v in s.get('enabledPlugins', {}).items() if v]
-print(', '.join(plugins) if plugins else '(none)')
-" 2>/dev/null || echo "(unknown)")
-echo "Enabled plugins: ${ENABLED}"
-
-# Print available profiles
-echo ""
-echo "Available profiles:"
-for dir in "${MARKETPLACE_HOME}"/profiles/*/; do
-  [[ -f "${dir}settings.json" ]] && echo "  - $(basename "$dir")"
-done
-echo ""
-echo "Swap profiles anytime with:"
-echo "  npx tsx ${MARKETPLACE_HOME}/scripts/swap-profile.ts swap <profile> ${TARGET_DIR}"
-echo "  or use /profiles swap <name> inside Claude Code"
+bash "$FF_PROFILES_DIR/scripts/swap-profile.sh" swap "$DEFAULT_PROFILE" \
+	--repo-root "$FF_PROFILES_DIR" \
+	--target "$TARGET"

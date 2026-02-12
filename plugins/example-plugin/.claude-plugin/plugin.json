@@ -1,8 +1,0 @@
-{
-  "name": "example-plugin",
-  "description": "Template plugin demonstrating all Claude Code extension types: commands, agents, skills, hooks, and MCP servers.",
-  "version": "1.0.0",
-  "author": {
-    "name": "Your Org"
-  }
-}
