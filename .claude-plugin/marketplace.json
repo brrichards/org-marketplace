@@ -14,6 +14,38 @@
       "author": { "name": "Your Org" },
       "source": "./plugins/example-plugin",
       "category": "development"
+    },
+    {
+      "name": "code-quality",
+      "description": "Code review, refactoring suggestions, and best practices enforcement",
+      "version": "1.0.0",
+      "author": { "name": "Org Marketplace" },
+      "source": "./plugins/code-quality",
+      "category": "development"
+    },
+    {
+      "name": "git-workflow",
+      "description": "Git conventions, conventional commits, and PR workflow automation",
+      "version": "1.0.0",
+      "author": { "name": "Org Marketplace" },
+      "source": "./plugins/git-workflow",
+      "category": "development"
+    },
+    {
+      "name": "security",
+      "description": "Security scanning, secrets detection, and OWASP-focused code review",
+      "version": "1.0.0",
+      "author": { "name": "Org Marketplace" },
+      "source": "./plugins/security",
+      "category": "security"
+    },
+    {
+      "name": "testing",
+      "description": "Test generation, TDD workflow, and coverage analysis",
+      "version": "1.0.0",
+      "author": { "name": "Org Marketplace" },
+      "source": "./plugins/testing",
+      "category": "development"
     }
   ]
 }

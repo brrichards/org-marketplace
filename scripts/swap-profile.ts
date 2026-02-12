@@ -3,12 +3,12 @@
 import { readFile, mkdir, rm, cp, readdir, stat } from "fs/promises";
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";
+import { homedir } from "os";
 
 // #region Constants
 
 const scriptDir = dirname(fileURLToPath(import.meta.url));
-const root = join(scriptDir, "..");
-const profilesDir = join(root, "profiles");
+const defaultMarketplace = join(homedir(), ".org-marketplace");
 
 // #endregion
 
@@ -41,6 +41,31 @@ interface ProfileSettings {
 // #region Helpers
 
 /**
+ * Resolves the marketplace root directory.
+ *
+ * Priority:
+ * 1. Explicit --marketplace flag value
+ * 2. If running from within the repo (scriptDir is inside a marketplace), use that
+ * 3. Fall back to ~/.org-marketplace
+ */
+function resolveMarketplace(explicit?: string): string {
+  if (explicit) return explicit;
+
+  // Check if the script is inside a marketplace repo (has profiles/ sibling)
+  const repoRoot = join(scriptDir, "..");
+  try {
+    const fs = require("fs");
+    if (fs.existsSync(join(repoRoot, "profiles")) && fs.existsSync(join(repoRoot, ".claude-plugin"))) {
+      return repoRoot;
+    }
+  } catch {
+    // Fall through
+  }
+
+  return defaultMarketplace;
+}
+
+/**
  * Checks whether a directory exists and contains a settings.json file.
  *
  * @param dirPath - Absolute path to the candidate profile directory.
@@ -60,7 +85,7 @@ async function isProfileDir(dirPath: string): Promise<boolean> {
  *
  * @returns Sorted array of profile directory names.
  */
-async function discoverProfiles(): Promise<string[]> {
+async function discoverProfiles(profilesDir: string): Promise<string[]> {
   const entries = await readdir(profilesDir, { withFileTypes: true });
   const profiles: string[] = [];
 
@@ -77,10 +102,11 @@ async function discoverProfiles(): Promise<string[]> {
 /**
  * Loads and parses a profile's settings.json.
  *
+ * @param profilesDir - The profiles directory.
  * @param name - The profile name (subdirectory under profiles/).
  * @returns The parsed profile settings.
  */
-async function loadProfileSettings(name: string): Promise<ProfileSettings> {
+async function loadProfileSettings(profilesDir: string, name: string): Promise<ProfileSettings> {
   const settingsPath = join(profilesDir, name, "settings.json");
   const data = await readFile(settingsPath, "utf-8");
   return JSON.parse(data) as ProfileSettings;
@@ -110,8 +136,8 @@ function getEnabledPlugins(settings: ProfileSettings): string[] {
  * Scans the profiles/ directory for subdirectories containing settings.json.
  * Displays a table with profile name, enabled plugin count, and plugins.
  */
-async function cmdList(): Promise<void> {
-  const profiles = await discoverProfiles();
+async function cmdList(profilesDir: string): Promise<void> {
+  const profiles = await discoverProfiles(profilesDir);
 
   if (profiles.length === 0) {
     console.log("No profiles found in profiles/");
@@ -129,7 +155,7 @@ async function cmdList(): Promise<void> {
 
   for (const name of profiles) {
     try {
-      const settings = await loadProfileSettings(name);
+      const settings = await loadProfileSettings(profilesDir, name);
       const enabled = getEnabledPlugins(settings);
       const count = enabled.length;
       const plugins = count === 0 ? "(none)" : enabled.join(", ");
@@ -150,6 +176,7 @@ async function cmdList(): Promise<void> {
 /**
  * Swaps a target project to the specified profile.
  *
+ * @param profilesDir - The profiles directory.
  * @param name - The profile name to activate.
  * @param target - The target project directory (defaults to cwd).
  *
@@ -162,9 +189,9 @@ async function cmdList(): Promise<void> {
  * the copied settings.json natively — it prompts the user to install
  * marketplaces and plugins when they trust the project folder.
  */
-async function cmdSwap(name: string, target: string): Promise<void> {
+async function cmdSwap(profilesDir: string, name: string, target: string): Promise<void> {
   // Validate profile exists
-  const profiles = await discoverProfiles();
+  const profiles = await discoverProfiles(profilesDir);
   if (!profiles.includes(name)) {
     console.error(`Error: Profile "${name}" not found.`);
     console.error(`Available profiles: ${profiles.join(", ")}`);
@@ -172,7 +199,7 @@ async function cmdSwap(name: string, target: string): Promise<void> {
   }
 
   // Read profile settings for summary
-  const settings = await loadProfileSettings(name);
+  const settings = await loadProfileSettings(profilesDir, name);
   const enabled = getEnabledPlugins(settings);
 
   // Remove existing .claude/ directory
@@ -201,18 +228,19 @@ async function cmdSwap(name: string, target: string): Promise<void> {
  * Prints usage information.
  */
 function cmdHelp(): void {
-  console.log("Usage: swap-profile.ts <command> [args]\n");
+  console.log("Usage: swap-profile.ts <command> [args] [--marketplace <path>]\n");
   console.log("Commands:");
   console.log("  list                    List available profiles");
   console.log("  swap <name> [target]    Apply a profile to a target directory");
   console.log("  help                    Show this help message\n");
   console.log("Arguments:");
-  console.log("  name      Profile name (subdirectory under profiles/)");
-  console.log("  target    Target project directory (defaults to current directory)\n");
+  console.log("  name          Profile name (subdirectory under profiles/)");
+  console.log("  target        Target project directory (defaults to current directory)");
+  console.log("  --marketplace Path to the marketplace repo (defaults to ~/.org-marketplace)\n");
   console.log("Examples:");
   console.log("  npx tsx scripts/swap-profile.ts list");
-  console.log("  npx tsx scripts/swap-profile.ts swap default /path/to/project");
-  console.log("  npx tsx scripts/swap-profile.ts swap example-full");
+  console.log("  npx tsx scripts/swap-profile.ts swap developer /path/to/project");
+  console.log("  npx tsx scripts/swap-profile.ts swap full --marketplace /custom/path");
 }
 
 // #endregion
@@ -223,27 +251,44 @@ function cmdHelp(): void {
  * Parses CLI arguments and dispatches to the appropriate subcommand.
  *
  * @remarks
- * Defaults to `list` when no subcommand is provided. Prints usage
+ * Defaults to `list` when no subcommand is provided. Supports --marketplace
+ * flag for specifying a custom marketplace location. Prints usage
  * information and exits with code 1 for unknown commands.
  */
 async function main(): Promise<void> {
-  const args = process.argv.slice(2);
+  const rawArgs = process.argv.slice(2);
+
+  // Extract --marketplace flag from anywhere in the args
+  let marketplacePath: string | undefined;
+  const args: string[] = [];
+  for (let i = 0; i < rawArgs.length; i++) {
+    if (rawArgs[i] === "--marketplace" && i + 1 < rawArgs.length) {
+      marketplacePath = rawArgs[i + 1];
+      i++; // skip the value
+    } else {
+      args.push(rawArgs[i]);
+    }
+  }
+
+  const marketplace = resolveMarketplace(marketplacePath);
+  const profilesDir = join(marketplace, "profiles");
+
   const command = args[0] || "list";
 
   switch (command) {
     case "list": {
-      await cmdList();
+      await cmdList(profilesDir);
       break;
     }
 
     case "swap": {
       const name = args[1];
       if (!name) {
-        console.error("Usage: swap-profile.ts swap <name> [target]");
+        console.error("Usage: swap-profile.ts swap <name> [target] [--marketplace <path>]");
         process.exit(1);
       }
       const target = args[2] || process.cwd();
-      await cmdSwap(name, target);
+      await cmdSwap(profilesDir, name, target);
       break;
     }
 
@@ -254,7 +299,7 @@ async function main(): Promise<void> {
 
     default: {
       console.error(`Unknown command: ${command}`);
-      console.error("Usage: swap-profile.ts <list|swap|help>");
+      console.error("Usage: swap-profile.ts <list|swap|help> [--marketplace <path>]");
       console.error("  list                    List available profiles");
       console.error("  swap <name> [target]    Apply a profile to a target");
       console.error("  help                    Show usage information");

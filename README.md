@@ -4,17 +4,20 @@ Claude Code plugin marketplace with **profiles** — lightweight declarations th
 
 ## Quick Start
 
-One command to install Claude Code and apply a marketplace profile to any project:
+Install the marketplace locally and apply a profile:
 
 ```bash
+# Clone marketplace + apply default profile
 curl -fsSL https://raw.githubusercontent.com/brrichards/org-marketplace/main/setup.sh | bash
+
+# Apply the developer profile (code-quality + git-workflow + testing)
+curl -fsSL https://raw.githubusercontent.com/brrichards/org-marketplace/main/setup.sh | bash -s -- --profile developer
+
+# Apply to a specific project directory
+curl -fsSL https://raw.githubusercontent.com/brrichards/org-marketplace/main/setup.sh | bash -s -- --profile full --target /path/to/project
 ```
 
-Apply a specific profile:
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/brrichards/org-marketplace/main/setup.sh | bash -s -- --profile example-full
-```
+This clones the marketplace to `~/.org-marketplace/` and copies the profile into your project's `.claude/` directory.
 
 ### Devcontainer / Codespaces
 
@@ -23,49 +26,39 @@ Add this to any repo's `.devcontainer/devcontainer.json` to auto-install on Code
 ```jsonc
 // .devcontainer/devcontainer.json
 {
-  "postCreateCommand": "curl -fsSL https://raw.githubusercontent.com/brrichards/org-marketplace/main/setup.sh | bash -s -- --profile example-full"
+  "postCreateCommand": "curl -fsSL https://raw.githubusercontent.com/brrichards/org-marketplace/main/setup.sh | bash -s -- --profile developer"
 }
 ```
 
-See [setup.sh](./setup.sh) for all options (`--profile`, `--target`, `MARKETPLACE_LOCAL`, etc.).
+See [setup.sh](./setup.sh) for all options (`--profile`, `--target`, `--home`).
 
 ## Prerequisites
 
 - [Claude Code](https://docs.anthropic.com/en/docs/claude-code) installed
 
-## Setup
-
-The fastest way to get started is the [Quick Start](#quick-start) one-liner above. Alternatively, add the marketplace manually:
-
-```bash
-claude plugin marketplace add your-org/org-marketplace
-```
-
 ## Plugins
 
-**Browse available plugins:**
+### Available Plugins
 
-```
-/plugin > Discover
-```
+| Plugin | Description | Commands | Version |
+|--------|-------------|----------|---------|
+| [code-quality](./plugins/code-quality) | Code review & best practices | `/code-quality:review`, `/code-quality:refactor` | 1.0.0 |
+| [git-workflow](./plugins/git-workflow) | Git conventions & PR workflow | `/git-workflow:commit`, `/git-workflow:pr` | 1.0.0 |
+| [security](./plugins/security) | Security scanning & secrets detection | `/security:scan`, `/security:audit-deps` | 1.0.0 |
+| [testing](./plugins/testing) | Test generation & TDD workflow | `/testing:gen-tests`, `/testing:coverage` | 1.0.0 |
+| [example-plugin](./plugins/example-plugin) | Template demonstrating all extension types | `/example-plugin:hello` | 1.0.0 |
 
-**Install a plugin:**
+**Install a plugin individually:**
 
 ```bash
-claude plugin install example-plugin@org-marketplace
+claude plugin install code-quality@org-marketplace
 ```
 
 **Test a plugin locally (for development):**
 
 ```bash
-claude --plugin-dir ./plugins/example-plugin
+claude --plugin-dir ./plugins/code-quality
 ```
-
-### Available Plugins
-
-| Plugin | Description | Version |
-|--------|-------------|---------|
-| [example-plugin](./plugins/example-plugin) | Template plugin demonstrating all extension types | 1.0.0 |
 
 ## Profiles
 
@@ -76,31 +69,37 @@ Profiles bundle plugins with settings and project instructions. Instead of manua
 | Profile | Plugins | Description |
 |---------|---------|-------------|
 | `default` | (none) | Baseline — safe permissions, no plugins |
-| `example-full` | example-plugin | Full example with commands, agents, skills, hooks, MCP |
+| `developer` | code-quality, git-workflow, testing | Standard development workflow |
+| `secure-dev` | code-quality, git-workflow, security | Security-focused development with extended deny-list |
+| `full` | all 4 plugins | Everything enabled with extended deny-list |
 
 ### Swapping Profiles
+
+**Via slash command (from any project with the marketplace installed):**
+
+```
+/profiles list
+/profiles swap developer
+```
 
 **From the marketplace repo:**
 
 ```bash
-# List available profiles
 npx tsx scripts/swap-profile.ts list
+npx tsx scripts/swap-profile.ts swap developer /path/to/your-project
+```
 
-# Apply a profile to your project
-npx tsx scripts/swap-profile.ts swap example-full /path/to/your-project
+**From any directory (after install):**
+
+```bash
+npx tsx ~/.org-marketplace/scripts/swap-profile.ts list
+npx tsx ~/.org-marketplace/scripts/swap-profile.ts swap full /path/to/your-project
 ```
 
 **Via shell wrapper:**
 
 ```bash
 bash scripts/swap-profile.sh swap default /path/to/your-project
-```
-
-**Via slash command (from any project):**
-
-```
-/profiles list
-/profiles swap example-full
 ```
 
 See [profiles/README.md](./profiles/README.md) for details on creating and managing profiles.

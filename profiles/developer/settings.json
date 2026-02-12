@@ -8,7 +8,9 @@
     }
   },
   "enabledPlugins": {
-    "example-plugin@org-marketplace": true
+    "code-quality@org-marketplace": true,
+    "git-workflow@org-marketplace": true,
+    "testing@org-marketplace": true
   },
   "permissions": {
     "deny": [
