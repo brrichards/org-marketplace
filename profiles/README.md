@@ -1,20 +1,12 @@
 # Profiles
 
-Profiles are lightweight declarations that control which marketplace plugins are active. Each profile is a directory containing:
-
-- **`settings.json`** — uses native Claude Code settings format (`extraKnownMarketplaces`, `enabledPlugins`, `permissions`)
-- **`CLAUDE.md`** — project instructions applied when the profile is active
+Profiles are `.claude/` folder templates. Each profile is a directory containing everything that belongs in a project's `.claude/` folder — `settings.json`, `CLAUDE.md`, and any other config files.
 
 ## How It Works
 
-When you swap to a profile, the script copies `settings.json` and `CLAUDE.md` into the target project's `.claude/` directory. That's it — no CLI calls needed.
+When you swap to a profile, the script **replaces** the target's `.claude/` directory entirely with the profile contents. The profile directory becomes the `.claude/` folder.
 
-Claude Code reads these settings natively:
-- **`extraKnownMarketplaces`** registers the marketplace automatically
-- **`enabledPlugins`** tells Claude Code which plugins to enable
-- On the next session, Claude Code prompts the user to install any missing marketplaces and plugins
-
-Existing `.claude/settings.local.json` is never touched.
+Claude Code handles the rest natively — it reads `extraKnownMarketplaces` and `enabledPlugins` from the copied `settings.json` and prompts the user to install marketplaces and plugins when they trust the project folder.
 
 ## Available Profiles
 
@@ -35,6 +27,22 @@ npx tsx scripts/swap-profile.ts list
 npx tsx scripts/swap-profile.ts swap example-full /path/to/project
 ```
 
+### Remote setup (without cloning the marketplace)
+
+Apply a profile to any project with a single command — no clone required. `GITHUB_TOKEN` is auto-set in Codespaces:
+
+```bash
+# Default profile in the current directory
+curl -fsSL -H "Authorization: token $GITHUB_TOKEN" -H "Accept: application/vnd.github.raw" \
+  "https://api.github.com/repos/brrichards/org-marketplace/contents/setup.sh?ref=main" | bash
+
+# Specific profile to a specific directory
+curl -fsSL -H "Authorization: token $GITHUB_TOKEN" -H "Accept: application/vnd.github.raw" \
+  "https://api.github.com/repos/brrichards/org-marketplace/contents/setup.sh?ref=main" | bash -s -- --profile example-full --target /path/to/project
+```
+
+This downloads `settings.json` (always overwritten) and `CLAUDE.md` (only written if absent) from the profile into the target's `.claude/` directory.
+
 ### Via slash command (from any project)
 
 ```
@@ -52,11 +60,13 @@ bash scripts/swap-profile.sh swap default /path/to/project
 ## Creating a New Profile
 
 1. Create a directory under `profiles/` with your profile name
-2. Add `settings.json` using the native Claude Code format
+2. Add everything that should go in `.claude/` — at minimum `settings.json`
 3. Add `CLAUDE.md` documenting what the profile provides
 4. Open a PR
 
 ### settings.json Format
+
+Uses the native Claude Code settings format:
 
 ```json
 {

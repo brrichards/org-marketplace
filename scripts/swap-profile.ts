@@ -1,6 +1,6 @@
 /// <reference types="node" />
 
-import { readFile, mkdir, cp, readdir, stat } from "fs/promises";
+import { readFile, mkdir, rm, cp, readdir, stat } from "fs/promises";
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";
 
@@ -19,9 +19,10 @@ const profilesDir = join(root, "profiles");
  *
  * @remarks
  * Uses the native Claude Code settings format. The `extraKnownMarketplaces`
- * field registers the marketplace, and `enabledPlugins` is a boolean map
- * of `"plugin@marketplace": true/false`. Claude Code handles installation
- * prompts automatically when a user trusts the project.
+ * field registers marketplaces, and `enabledPlugins` is a boolean map
+ * of `"plugin@marketplace": true/false`. Claude Code handles marketplace
+ * registration and plugin installation automatically when the user
+ * trusts the project folder.
  */
 interface ProfileSettings {
   extraKnownMarketplaces?: Record<
@@ -86,10 +87,10 @@ async function loadProfileSettings(name: string): Promise<ProfileSettings> {
 }
 
 /**
- * Returns the list of enabled plugin names from a profile's settings.
+ * Returns the list of enabled plugin keys from a profile's settings.
  *
  * @param settings - The parsed profile settings.
- * @returns Array of plugin names that are set to true.
+ * @returns Array of "plugin@marketplace" strings that are set to true.
  */
 function getEnabledPlugins(settings: ProfileSettings): string[] {
   if (!settings.enabledPlugins) return [];
@@ -153,13 +154,13 @@ async function cmdList(): Promise<void> {
  * @param target - The target project directory (defaults to cwd).
  *
  * @remarks
- * Copies the profile's settings.json and CLAUDE.md into the target
- * project's `.claude/` directory. Claude Code reads `extraKnownMarketplaces`
- * and `enabledPlugins` from settings.json natively — no CLI calls needed.
- * The user is prompted to install marketplaces/plugins when they trust
- * the project folder.
+ * 1. Validates the profile exists
+ * 2. Removes the target's .claude/ directory
+ * 3. Copies the entire profile directory as the new .claude/
  *
- * Preserves `.claude/settings.local.json` (never touches it).
+ * Claude Code reads `extraKnownMarketplaces` and `enabledPlugins` from
+ * the copied settings.json natively — it prompts the user to install
+ * marketplaces and plugins when they trust the project folder.
  */
 async function cmdSwap(name: string, target: string): Promise<void> {
   // Validate profile exists
@@ -174,40 +175,26 @@ async function cmdSwap(name: string, target: string): Promise<void> {
   const settings = await loadProfileSettings(name);
   const enabled = getEnabledPlugins(settings);
 
-  // Ensure target .claude/ exists
+  // Remove existing .claude/ directory
   const targetClaudeDir = join(target, ".claude");
-  await mkdir(targetClaudeDir, { recursive: true });
-
-  // Copy settings.json + CLAUDE.md
-  const profileDir = join(profilesDir, name);
-
-  await cp(
-    join(profileDir, "settings.json"),
-    join(targetClaudeDir, "settings.json"),
-  );
-  console.log(`Copied settings.json -> ${join(targetClaudeDir, "settings.json")}`);
-
   try {
-    await cp(
-      join(profileDir, "CLAUDE.md"),
-      join(targetClaudeDir, "CLAUDE.md"),
-    );
-    console.log(`Copied CLAUDE.md -> ${join(targetClaudeDir, "CLAUDE.md")}`);
+    await rm(targetClaudeDir, { recursive: true, force: true });
   } catch {
-    // CLAUDE.md is optional
+    // Directory may not exist — safe to ignore
   }
 
+  // Copy entire profile directory as .claude/
+  const profileDir = join(profilesDir, name);
+  await cp(profileDir, targetClaudeDir, { recursive: true });
+  console.log(`Copied profile "${name}" -> ${targetClaudeDir}`);
+
   // Summary
-  console.log();
-  console.log(`Profile "${name}" applied to ${target}`);
+  console.log(`\nProfile "${name}" applied to ${target}`);
   if (enabled.length > 0) {
     console.log(`Enabled plugins: ${enabled.join(", ")}`);
   } else {
     console.log("No plugins enabled.");
   }
-  console.log(
-    "\nClaude Code will prompt to install marketplaces and plugins on next session.",
-  );
 }
 
 /**
