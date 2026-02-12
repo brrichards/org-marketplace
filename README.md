@@ -1,8 +1,33 @@
 # Org Marketplace
 
-Internal Claude Code plugin marketplace for **[Your Org]**. Only org members with access to this repo can browse and install plugins.
+Claude Code plugin marketplace with **profiles** — lightweight declarations that bundle plugins with settings and instructions, so teams can swap configurations with a single command.
 
-This repo also includes **profiles** — lightweight declarations that bundle plugins with settings and instructions, so teams can swap configurations with a single command.
+## Quick Start
+
+One command to install Claude Code and apply a marketplace profile to any project:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/brrichards/org-marketplace/main/setup.sh | bash
+```
+
+Apply a specific profile:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/brrichards/org-marketplace/main/setup.sh | bash -s -- --profile example-full
+```
+
+### Devcontainer / Codespaces
+
+Add this to any repo's `.devcontainer/devcontainer.json` to auto-install on Codespace creation:
+
+```jsonc
+// .devcontainer/devcontainer.json
+{
+  "postCreateCommand": "curl -fsSL https://raw.githubusercontent.com/brrichards/org-marketplace/main/setup.sh | bash -s -- --profile example-full"
+}
+```
+
+See [setup.sh](./setup.sh) for all options (`--profile`, `--target`, `MARKETPLACE_LOCAL`, etc.).
 
 ## Quick Start
 
@@ -43,11 +68,6 @@ See [setup.sh](./setup.sh) for all options (`--profile`, `--target`, `MARKETPLAC
 ## Prerequisites
 
 - [Claude Code](https://docs.anthropic.com/en/docs/claude-code) installed
-- A `GITHUB_TOKEN` environment variable with read access to this repo
-
-```bash
-export GITHUB_TOKEN=ghp_your_token_here
-```
 
 ## Setup
 
