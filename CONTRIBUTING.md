@@ -154,3 +154,60 @@ Categories: `development`, `testing`, `deployment`, `documentation`, `utilities`
 - [ ] `README.md` documents what the plugin does and how to use it
 - [ ] Plugin is registered in `.claude-plugin/marketplace.json`
 - [ ] Tested locally with `claude --plugin-dir ./plugins/your-plugin-name`
+
+## Contributing Profiles
+
+Profiles live in `profiles/<name>/` and bundle plugins with settings and instructions.
+
+### Profile Structure
+
+```
+profiles/your-profile/
+├── settings.json    # Required: plugins and permissions
+└── CLAUDE.md        # Required: project instructions
+```
+
+### settings.json Format
+
+Uses the native Claude Code settings format:
+
+```json
+{
+  "extraKnownMarketplaces": {
+    "org-marketplace": {
+      "source": {
+        "source": "github",
+        "repo": "brrichards/org-marketplace"
+      }
+    }
+  },
+  "enabledPlugins": {
+    "plugin-a@org-marketplace": true,
+    "plugin-b@org-marketplace": true
+  },
+  "permissions": {
+    "deny": [
+      "Bash(git push --force*)",
+      "Bash(git push * --force*)",
+      "Bash(rm -rf /*)",
+      "Bash(git reset --hard*)",
+      "Bash(git checkout -- .)",
+      "Bash(git clean -f*)"
+    ]
+  }
+}
+```
+
+### CLAUDE.md
+
+Document what the profile provides: which plugins are enabled, what capabilities they add, and any special instructions.
+
+### Profile PR Checklist
+
+- [ ] Profile directory uses `lowercase-with-dashes` naming
+- [ ] `settings.json` uses native Claude Code format (`extraKnownMarketplaces` + `enabledPlugins` map)
+- [ ] All referenced plugins exist in this marketplace
+- [ ] Plugin names use `"plugin@org-marketplace": true` format
+- [ ] `CLAUDE.md` documents what the profile enables
+- [ ] Standard deny-list for destructive commands is included
+- [ ] Tested with `npx tsx scripts/swap-profile.ts swap your-profile /tmp/test`
