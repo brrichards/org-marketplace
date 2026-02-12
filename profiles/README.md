@@ -33,12 +33,12 @@ Apply a profile to any project with a single command — no clone required. `GIT
 
 ```bash
 # Default profile in the current directory
-curl -fsSL -H "Authorization: token $GITHUB_TOKEN" \
-  https://raw.githubusercontent.com/brrichards/org-marketplace/main/setup.sh | bash
+curl -fsSL -H "Authorization: token $GITHUB_TOKEN" -H "Accept: application/vnd.github.raw" \
+  "https://api.github.com/repos/brrichards/org-marketplace/contents/setup.sh?ref=main" | bash
 
 # Specific profile to a specific directory
-curl -fsSL -H "Authorization: token $GITHUB_TOKEN" \
-  https://raw.githubusercontent.com/brrichards/org-marketplace/main/setup.sh | bash -s -- --profile example-full --target /path/to/project
+curl -fsSL -H "Authorization: token $GITHUB_TOKEN" -H "Accept: application/vnd.github.raw" \
+  "https://api.github.com/repos/brrichards/org-marketplace/contents/setup.sh?ref=main" | bash -s -- --profile example-full --target /path/to/project
 ```
 
 This downloads `settings.json` (always overwritten) and `CLAUDE.md` (only written if absent) from the profile into the target's `.claude/` directory.

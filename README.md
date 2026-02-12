@@ -9,15 +9,15 @@ This repo also includes **profiles** — lightweight declarations that bundle pl
 One command to install Claude Code and apply a marketplace profile to any project. `GITHUB_TOKEN` is auto-set in Codespaces:
 
 ```bash
-curl -fsSL -H "Authorization: token $GITHUB_TOKEN" \
-  https://raw.githubusercontent.com/brrichards/org-marketplace/main/setup.sh | bash
+curl -fsSL -H "Authorization: token $GITHUB_TOKEN" -H "Accept: application/vnd.github.raw" \
+  "https://api.github.com/repos/brrichards/org-marketplace/contents/setup.sh?ref=main" | bash
 ```
 
 Apply a specific profile:
 
 ```bash
-curl -fsSL -H "Authorization: token $GITHUB_TOKEN" \
-  https://raw.githubusercontent.com/brrichards/org-marketplace/main/setup.sh | bash -s -- --profile example-full
+curl -fsSL -H "Authorization: token $GITHUB_TOKEN" -H "Accept: application/vnd.github.raw" \
+  "https://api.github.com/repos/brrichards/org-marketplace/contents/setup.sh?ref=main" | bash -s -- --profile example-full
 ```
 
 Use in a devcontainer:
@@ -25,7 +25,16 @@ Use in a devcontainer:
 ```jsonc
 // .devcontainer/devcontainer.json
 {
-  "postCreateCommand": "curl -fsSL -H \"Authorization: token $GITHUB_TOKEN\" https://raw.githubusercontent.com/brrichards/org-marketplace/main/setup.sh | bash -s -- --profile example-full"
+  "customizations": {
+    "codespaces": {
+      "repositories": {
+        "brrichards/org-marketplace": {
+          "permissions": { "contents": "read" }
+        }
+      }
+    }
+  },
+  "postCreateCommand": "curl -fsSL -H \"Authorization: token $GITHUB_TOKEN\" -H \"Accept: application/vnd.github.raw\" \"https://api.github.com/repos/brrichards/org-marketplace/contents/setup.sh?ref=main\" | bash -s -- --profile example-full"
 }
 ```
 

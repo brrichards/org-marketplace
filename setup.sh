@@ -3,9 +3,8 @@ set -euo pipefail
 
 # ── Org Marketplace · Auto-Install ─────────────────────────────────────────
 # Private repo (GITHUB_TOKEN is auto-set in Codespaces):
-#   curl -fsSL -H "Authorization: token $GITHUB_TOKEN" https://raw.githubusercontent.com/brrichards/org-marketplace/main/setup.sh | bash
-# Public repo:
-#   curl -fsSL https://raw.githubusercontent.com/brrichards/org-marketplace/main/setup.sh | bash
+#   curl -fsSL -H "Authorization: token $GITHUB_TOKEN" -H "Accept: application/vnd.github.raw" \
+#     "https://api.github.com/repos/brrichards/org-marketplace/contents/setup.sh?ref=main" | bash
 # ───────────────────────────────────────────────────────────────────────────
 
 # Defaults (override via environment)
@@ -35,8 +34,8 @@ fetch_file() {
   if [[ -n "${MARKETPLACE_LOCAL:-}" ]]; then
     cat "${MARKETPLACE_LOCAL}/${rel_path}"
   else
-    local url="https://raw.githubusercontent.com/${MARKETPLACE_REPO}/${MARKETPLACE_REF}/${rel_path}"
-    local curl_args=(-fsSL)
+    local url="https://api.github.com/repos/${MARKETPLACE_REPO}/contents/${rel_path}?ref=${MARKETPLACE_REF}"
+    local curl_args=(-fsSL -H "Accept: application/vnd.github.raw")
     if [[ -n "${GITHUB_TOKEN:-}" ]]; then
       curl_args+=(-H "Authorization: token ${GITHUB_TOKEN}")
     fi
