@@ -32,6 +32,42 @@ Add this to any repo's `.devcontainer/devcontainer.json` to auto-install on Code
 
 See [setup.sh](./setup.sh) for all options (`--profile`, `--target`, `--home`).
 
+## Quick Start
+
+One command to install Claude Code and apply a marketplace profile to any project. `GITHUB_TOKEN` is auto-set in Codespaces:
+
+```bash
+curl -fsSL -H "Authorization: token $GITHUB_TOKEN" -H "Accept: application/vnd.github.raw" \
+  "https://api.github.com/repos/brrichards/org-marketplace/contents/setup.sh?ref=main" | bash
+```
+
+Apply a specific profile:
+
+```bash
+curl -fsSL -H "Authorization: token $GITHUB_TOKEN" -H "Accept: application/vnd.github.raw" \
+  "https://api.github.com/repos/brrichards/org-marketplace/contents/setup.sh?ref=main" | bash -s -- --profile example-full
+```
+
+Use in a devcontainer:
+
+```jsonc
+// .devcontainer/devcontainer.json
+{
+  "customizations": {
+    "codespaces": {
+      "repositories": {
+        "brrichards/org-marketplace": {
+          "permissions": { "contents": "read" }
+        }
+      }
+    }
+  },
+  "postCreateCommand": "curl -fsSL -H \"Authorization: token $GITHUB_TOKEN\" -H \"Accept: application/vnd.github.raw\" \"https://api.github.com/repos/brrichards/org-marketplace/contents/setup.sh?ref=main\" | bash -s -- --profile example-full"
+}
+```
+
+See [setup.sh](./setup.sh) for all options (`--profile`, `--target`, `MARKETPLACE_LOCAL`, etc.).
+
 ## Prerequisites
 
 - [Claude Code](https://docs.anthropic.com/en/docs/claude-code) installed
