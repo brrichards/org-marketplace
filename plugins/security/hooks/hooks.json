@@ -1,14 +1,16 @@
 {
-  "hooks": [
-    {
-      "type": "preToolUse",
-      "toolName": "Write",
-      "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks-handlers/secret-scan.sh"
-    },
-    {
-      "type": "preToolUse",
-      "toolName": "Edit",
-      "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks-handlers/secret-scan.sh"
-    }
-  ]
+  "hooks": {
+    "PreToolUse": [
+      {
+        "type": "command",
+        "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks-handlers/secret-scan.sh",
+        "toolName": "Write"
+      },
+      {
+        "type": "command",
+        "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks-handlers/secret-scan.sh",
+        "toolName": "Edit"
+      }
+    ]
+  }
 }

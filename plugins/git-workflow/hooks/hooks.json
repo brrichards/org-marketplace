@@ -1,9 +1,11 @@
 {
-  "hooks": [
-    {
-      "type": "preToolUse",
-      "toolName": "Bash",
-      "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks-handlers/pre-commit-check.sh"
-    }
-  ]
+  "hooks": {
+    "PreToolUse": [
+      {
+        "type": "command",
+        "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks-handlers/pre-commit-check.sh",
+        "toolName": "Bash"
+      }
+    ]
+  }
 }
