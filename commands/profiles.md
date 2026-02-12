@@ -7,16 +7,16 @@ You are managing Claude profiles. Profiles control which marketplace plugins are
 
 Determine the marketplace repo location:
 - If the current working directory contains a `profiles/` directory with profile subdirectories, use the current directory as the marketplace repo.
-- Otherwise, use `~/org-marketplace` as the marketplace repo.
+- Otherwise, use `~/.org-marketplace` as the marketplace repo.
 
 Parse the user's arguments after `/profiles`:
 
 **`/profiles` or `/profiles list`**
-Run: `npx tsx <marketplace-repo>/scripts/swap-profile.ts list`
+Run: `npx tsx <marketplace-repo>/scripts/swap-profile.ts list --marketplace <marketplace-repo>`
 Show only the script output.
 
 **`/profiles swap <name>`**
-Run: `npx tsx <marketplace-repo>/scripts/swap-profile.ts swap <name> <cwd>`
+Run: `npx tsx <marketplace-repo>/scripts/swap-profile.ts swap <name> <cwd> --marketplace <marketplace-repo>`
 Where `<cwd>` is the user's current working directory (the target project).
 Show only the script output.
 

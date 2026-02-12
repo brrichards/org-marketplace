@@ -13,7 +13,9 @@ Claude Code handles the rest natively — it reads `extraKnownMarketplaces` and 
 | Profile | Plugins | Description |
 |---------|---------|-------------|
 | `default` | (none) | Baseline — safe permissions, marketplace registered but no plugins enabled |
-| `example-full` | example-plugin | Full example plugin with commands, agents, skills, hooks, MCP |
+| `developer` | code-quality, git-workflow, testing | Standard development workflow |
+| `secure-dev` | code-quality, git-workflow, security | Security-focused development with extended deny-list |
+| `full` | code-quality, git-workflow, security, testing | All plugins enabled with extended deny-list |
 
 ## Usage
 
@@ -24,30 +26,36 @@ Claude Code handles the rest natively — it reads `extraKnownMarketplaces` and 
 npx tsx scripts/swap-profile.ts list
 
 # Swap a target project to a profile
-npx tsx scripts/swap-profile.ts swap example-full /path/to/project
+npx tsx scripts/swap-profile.ts swap developer /path/to/project
+```
+
+### From any directory (after install)
+
+```bash
+# List profiles
+npx tsx ~/.org-marketplace/scripts/swap-profile.ts list
+
+# Swap a target project to a profile
+npx tsx ~/.org-marketplace/scripts/swap-profile.ts swap full /path/to/project
 ```
 
 ### Remote setup (without cloning the marketplace)
 
-Apply a profile to any project with a single command — no clone required. `GITHUB_TOKEN` is auto-set in Codespaces:
+Apply a profile to any project with a single command — no clone required:
 
 ```bash
 # Default profile in the current directory
-curl -fsSL -H "Authorization: token $GITHUB_TOKEN" -H "Accept: application/vnd.github.raw" \
-  "https://api.github.com/repos/brrichards/org-marketplace/contents/setup.sh?ref=main" | bash
+curl -fsSL https://raw.githubusercontent.com/brrichards/org-marketplace/main/setup.sh | bash
 
 # Specific profile to a specific directory
-curl -fsSL -H "Authorization: token $GITHUB_TOKEN" -H "Accept: application/vnd.github.raw" \
-  "https://api.github.com/repos/brrichards/org-marketplace/contents/setup.sh?ref=main" | bash -s -- --profile example-full --target /path/to/project
+curl -fsSL https://raw.githubusercontent.com/brrichards/org-marketplace/main/setup.sh | bash -s -- --profile developer --target /path/to/project
 ```
-
-This downloads `settings.json` (always overwritten) and `CLAUDE.md` (only written if absent) from the profile into the target's `.claude/` directory.
 
 ### Via slash command (from any project)
 
 ```
 /profiles list
-/profiles swap example-full
+/profiles swap developer
 ```
 
 ### Via shell wrapper

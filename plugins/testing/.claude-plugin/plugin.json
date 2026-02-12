@@ -1,0 +1,6 @@
+{
+  "name": "testing",
+  "description": "Test generation, TDD workflow, and coverage analysis for Claude Code.",
+  "version": "1.0.0",
+  "author": { "name": "Org Marketplace" }
+}
